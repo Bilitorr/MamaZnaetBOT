@@ -1,10 +1,11 @@
 import { Telegraf } from "telegraf";
+import express from "express";
 
-// читаем токен и URL из переменных окружения Render
+// читаем переменные окружения
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const webAppUrl = process.env.WEBAPP_URL || "https://mama-znaet-shop.vercel.app";
 
-// Команда /start
+// /start
 bot.start((ctx) => {
   ctx.reply(
     "Салам 👋 Добро пожаловать в магазин Mama Znaet!\nЖми кнопку ниже, чтобы открыть каталог:",
@@ -18,14 +19,13 @@ bot.start((ctx) => {
             }
           ]
         ],
-        resize_keyboard: true,
-        one_time_keyboard: false
+        resize_keyboard: true
       }
     }
   );
 });
 
-// Ловим данные из веб-приложения (если потом добавим оформление заказов)
+// Ловим данные из webapp (если потом будет отправка заказов)
 bot.on("message", (ctx) => {
   if (ctx.message.web_app_data) {
     console.log("Данные из webapp:", ctx.message.web_app_data.data);
@@ -33,8 +33,22 @@ bot.on("message", (ctx) => {
   }
 });
 
+// Запускаем бота
 bot.launch();
 
-// Аккуратно гасим бот при остановке контейнера
+// ==== Хак для Render ====
+// Создаём пустой веб-сервер, чтобы Render видел порт
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.send("Mama Znaet Bot работает ✅");
+});
+
+app.listen(PORT, () => {
+  console.log(`Web server running on port ${PORT}`);
+});
+
+// аккуратно останавливаем
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
