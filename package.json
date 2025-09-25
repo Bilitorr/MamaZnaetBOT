@@ -1,12 +1,14 @@
 {
   "name": "mama-znaet-bot",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Telegram bot for Mama Znaet shop",
   "main": "bot.js",
+  "type": "module",
   "scripts": {
     "start": "node bot.js"
   },
   "dependencies": {
-    "telegraf": "^4.16.3"
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.61.0"
   }
 }
