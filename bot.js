@@ -1,54 +1,35 @@
-import { Telegraf } from "telegraf";
 import express from "express";
+import { Telegraf } from "telegraf";
 
-// читаем переменные окружения
-const bot = new Telegraf(process.env.BOT_TOKEN);
-const webAppUrl = process.env.WEBAPP_URL || "https://mama-znaet-shop.vercel.app";
-
-// /start
-bot.start((ctx) => {
-  ctx.reply(
-    "Салам 👋 Добро пожаловать в магазин Mama Znaet!\nЖми кнопку ниже, чтобы открыть каталог:",
-    {
-      reply_markup: {
-        keyboard: [
-          [
-            {
-              text: "📦 Открыть каталог",
-              web_app: { url: webAppUrl }
-            }
-          ]
-        ],
-        resize_keyboard: true
-      }
-    }
-  );
-});
-
-// Ловим данные из webapp (если потом будет отправка заказов)
-bot.on("message", (ctx) => {
-  if (ctx.message.web_app_data) {
-    console.log("Данные из webapp:", ctx.message.web_app_data.data);
-    ctx.reply("✅ Спасибо, заказ принят!");
-  }
-});
-
-// Запускаем бота
-bot.launch();
-
-// ==== Хак для Render ====
-// Создаём пустой веб-сервер, чтобы Render видел порт
 const app = express();
+
+// переменные окружения
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEBAPP_URL = process.env.WEBAPP_URL;
+
+if (!BOT_TOKEN) {
+  throw new Error("BOT_TOKEN is not defined");
+}
+
+const bot = new Telegraf(BOT_TOKEN);
+
+// Кнопка запуска мини-аппа
+bot.start((ctx) =>
+  ctx.reply("Привет! 👋", {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "Открыть каталог 🛒", web_app: { url: WEBAPP_URL } }]
+      ]
+    }
+  })
+);
+
+// Запуск бота
+bot.launch().then(() => {
+  console.log("✅ Bot started and running on Render");
+});
+
+// Чтобы Render не ругался на отсутствие порта
 const PORT = process.env.PORT || 3000;
-
-app.get("/", (req, res) => {
-  res.send("Mama Znaet Bot работает ✅");
-});
-
-app.listen(PORT, () => {
-  console.log(`Web server running on port ${PORT}`);
-});
-
-// аккуратно останавливаем
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+app.get("/", (req, res) => res.send("Mama Znaet Bot is running..."));
+app.listen(PORT, () => console.log(`Express server running on port ${PORT}`));
