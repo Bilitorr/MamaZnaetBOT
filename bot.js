@@ -1,53 +1,40 @@
 import { Telegraf } from "telegraf";
 
-// токен читаем из env
+// читаем токен и URL из переменных окружения Render
 const bot = new Telegraf(process.env.BOT_TOKEN);
+const webAppUrl = process.env.WEBAPP_URL || "https://mama-znaet-shop.vercel.app";
 
-// ссылка на твой WebApp (Vercel)
-const WEBAPP_URL = process.env.WEBAPP_URL || "https://mama-znaet-shop.vercel.app";
-// куда пересылать заказы (ID чата менеджера)
-const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID || null;
-
+// Команда /start
 bot.start((ctx) => {
-  ctx.reply("Добро пожаловать 👋 Жми кнопку ниже, чтобы открыть каталог:", {
-    reply_markup: {
-      keyboard: [
-        [
-          {
-            text: "📦 Открыть каталог",
-            web_app: { url: WEBAPP_URL }
-          }
-        ]
-      ],
-      resize_keyboard: true
+  ctx.reply(
+    "Салам 👋 Добро пожаловать в магазин Mama Znaet!\nЖми кнопку ниже, чтобы открыть каталог:",
+    {
+      reply_markup: {
+        keyboard: [
+          [
+            {
+              text: "📦 Открыть каталог",
+              web_app: { url: webAppUrl }
+            }
+          ]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false
+      }
     }
-  });
+  );
 });
 
-// Ловим service message от WebApp: web_app_data
-bot.on("message", async (ctx) => {
-  try {
-    // если пришли данные из WebApp
-    if (ctx.message && ctx.message.web_app_data) {
-      const data = ctx.message.web_app_data.data; // строка, которую прислал WebApp
-      const from = ctx.from;
-      const userInfo = `Пользователь: ${from.username ? "@" + from.username : from.first_name || from.id} (id:${from.id})`;
-      const textToSend = `📥 *Новый заказ*\n${userInfo}\n\n${data}`;
-
-      const targetChat = MANAGER_CHAT_ID || ctx.from.id; // если менеджер не указан — отправим автору
-
-      // Отправляем менеджеру (формат Markdown)
-      await bot.telegram.sendMessage(targetChat, textToSend, { parse_mode: "Markdown" });
-
-      // Подтверждаем пользователю внутри WebApp (в чат)
-      await ctx.reply("Спасибо! Заказ получен — менеджер свяжется с вами.");
-    }
-  } catch (err) {
-    console.error("Ошибка при обработке web_app_data:", err);
+// Ловим данные из веб-приложения (если потом добавим оформление заказов)
+bot.on("message", (ctx) => {
+  if (ctx.message.web_app_data) {
+    console.log("Данные из webapp:", ctx.message.web_app_data.data);
+    ctx.reply("✅ Спасибо, заказ принят!");
   }
 });
 
-bot.launch().then(() => console.log("Bot started"));
+bot.launch();
 
+// Аккуратно гасим бот при остановке контейнера
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
